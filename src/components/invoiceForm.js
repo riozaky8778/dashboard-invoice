@@ -39,8 +39,8 @@ export function renderInvoiceFormModal(invoice = null) {
 
   // Filter out the JSON payload from Notes
   let notesValue = f.catatan || '';
-  if (notesValue.includes('===DATA_PESANAN===')) {
-    notesValue = notesValue.split('===DATA_PESANAN===')[0].trim();
+  if (notesValue.includes('__DATA_PESANAN__')) {
+    notesValue = notesValue.split('__DATA_PESANAN__')[0].trim();
   }
 
   return `
@@ -478,9 +478,9 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
   
   // Extract items list from notes payload
   let orderItems = [];
-  if (isEdit && f.catatan && f.catatan.includes('===DATA_PESANAN===')) {
+  if (isEdit && f.catatan && f.catatan.includes('__DATA_PESANAN__')) {
     try {
-      const jsonStr = f.catatan.split('===DATA_PESANAN===')[1].trim();
+      const jsonStr = f.catatan.split('__DATA_PESANAN__')[1].trim();
       orderItems = JSON.parse(jsonStr);
     } catch (e) {
       console.error('Failed to parse items data:', e);
@@ -859,7 +859,7 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
     // Attach raw items payload to Notes for edit reconstruction
     const userNotes = document.getElementById('inputCatatan').value.trim();
     const jsonStr = JSON.stringify(orderItems);
-    data.catatan = userNotes ? `${userNotes}\n\n===DATA_PESANAN===\n${jsonStr}` : `===DATA_PESANAN===\n${jsonStr}`;
+    data.catatan = userNotes ? `${userNotes}\n\n__DATA_PESANAN__\n${jsonStr}` : `__DATA_PESANAN__\n${jsonStr}`;
 
     data.sisaTagihan = hitungSisa(data.totalIDR, data.totalTerbayar);
     data.statusBayar = hitungStatusBayar(data.totalIDR, data.nominalDP, data.totalTerbayar, data.batasWaktuPelunasan);

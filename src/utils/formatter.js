@@ -201,8 +201,8 @@ export function isOverdue(dateStr) {
  */
 export function cleanCatatan(catatan) {
   if (!catatan) return '';
-  if (catatan.includes('===DATA_PESANAN===')) {
-    return catatan.split('===DATA_PESANAN===')[0].trim();
+  if (catatan.includes('__DATA_PESANAN__')) {
+    return catatan.split('__DATA_PESANAN__')[0].trim();
   }
   return catatan;
 }
