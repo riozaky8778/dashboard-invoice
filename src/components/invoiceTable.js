@@ -238,17 +238,9 @@ function renderRow(inv) {
                         isDeadlineApproaching(inv.batasWaktuPelunasan) ? 'date-approaching' : '';
   const sisaClass = inv.sisaTagihan <= 0 ? 'sisa-zero' : '';
 
-  // Check if this invoice has multi-item data
-  const hasDetailItems = inv.catatan && inv.catatan.includes('__DATA_PESANAN__');
-  const detailToggle = hasDetailItems
-    ? `<button class="row-action-btn btn-detail" data-no="${inv.no}" title="Lihat Detail" style="font-size:1rem">▶</button>`
-    : '';
-
   return `
-    <tr class="invoice-main-row ${overdueClass}" data-no="${inv.no}">
-      <td style="font-weight:600;color:var(--text-muted);white-space:nowrap">
-        ${detailToggle} ${inv.no}
-      </td>
+    <tr class="${overdueClass}" data-no="${inv.no}">
+      <td style="font-weight:600;color:var(--text-muted)">${inv.no}</td>
       <td class="cell-date">${formatTanggal(inv.tanggalInvoice)}</td>
       <td style="font-weight:600;color:var(--text-accent)">${inv.noInvoice}</td>
       <td>${inv.noReceipt || '-'}</td>
@@ -280,13 +272,9 @@ function renderRow(inv) {
         </div>
       </td>
     </tr>
-    <tr class="detail-expand-row" id="detail-row-${inv.no}" style="display:none;">
-      <td colspan="27" style="padding:0;">
-        <div class="detail-expand-panel" id="detail-panel-${inv.no}"></div>
-      </td>
-    </tr>
   `;
 }
+
 
 function parseOrderItems(catatan) {
   if (!catatan || !catatan.includes('__DATA_PESANAN__')) return [];

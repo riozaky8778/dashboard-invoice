@@ -135,7 +135,7 @@ a {
 
 .main-content {
   flex: 1;
-  margin-left: var(--sidebar-width);
+  margin-left: 290px;
   padding: 32px;
   transition: margin-left var(--transition-slow);
   min-height: 100vh;
@@ -147,7 +147,7 @@ a {
   position: fixed;
   top: 0;
   left: 0;
-  width: var(--sidebar-width);
+  width: 290px;
   height: 100vh;
   background: var(--bg-sidebar);
   backdrop-filter: var(--glass-blur);
