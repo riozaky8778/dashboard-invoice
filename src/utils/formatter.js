@@ -88,7 +88,7 @@ export function hitungStatusBayar(totalIDR, nominalDP, totalTerbayar, batasWaktu
     if (deadline < today && sisa > 0) return 'Jatuh Tempo';
   }
 
-  if (totalTerbayar > 0 || nominalDP > 0) return 'DP';
+  if (totalTerbayar > 0) return 'DP';
 
   return 'Menunggu Pembayaran';
 }

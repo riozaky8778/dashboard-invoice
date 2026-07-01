@@ -149,10 +149,15 @@ export function renderInvoiceFormModal(invoice = null) {
               </div>
 
               <div class="form-group">
-                <label>Total Terbayar</label>
-                <input type="number" class="form-input" name="totalTerbayar"
-                       value="${f.totalTerbayar || ''}" placeholder="0" min="0"
-                       id="inputTotalTerbayar" />
+                <label>Total Terbayar (Akumulasi)</label>
+                <input type="number" class="form-input auto-calculated" name="totalTerbayar"
+                       value="${f.totalTerbayar || 0}" readonly
+                       id="inputTotalTerbayar" style="background: rgba(124, 58, 237, 0.05);" />
+              </div>
+
+              <div class="form-group">
+                <label>Tambah Pembayaran Baru (IDR)</label>
+                <input type="number" class="form-input" id="inputTambahPembayaran" placeholder="Nominal yang baru dibayar" min="0" />
               </div>
 
               <div class="form-group">
@@ -781,7 +786,12 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
 
     // Calculate balance & status
     const nominalDP = parseFloat(inputNominalDP?.value) || 0;
-    const totalTerbayar = parseFloat(inputTotalTerbayar?.value) || 0;
+    const baseTotalTerbayar = invoice ? (parseFloat(invoice.totalTerbayar) || 0) : 0;
+    const tambahPembayaran = parseFloat(document.getElementById('inputTambahPembayaran')?.value) || 0;
+    const totalTerbayar = baseTotalTerbayar + tambahPembayaran;
+    
+    if (inputTotalTerbayar) inputTotalTerbayar.value = totalTerbayar;
+    
     const deadline = inputBatasWaktuPelunasan?.value || '';
 
     const sisa = hitungSisa(overallTotalIDR, totalTerbayar);
@@ -797,7 +807,8 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
   }
 
   // Bind change events to currency input/kurs change
-  [inputKurs, inputNominalDP, inputTotalTerbayar, inputBatasWaktuPelunasan].forEach(el => {
+  const inputTambahPembayaran = document.getElementById('inputTambahPembayaran');
+  [inputKurs, inputNominalDP, inputTambahPembayaran, inputBatasWaktuPelunasan].forEach(el => {
     if (el) el.addEventListener('input', recalculateTotals);
   });
 
