@@ -9,6 +9,16 @@
     <title>InvoiceHub — Sistem Rekap Invoice</title>
   </head>
   <body>
+    <script>
+      (function() {
+        try {
+          const savedTheme = localStorage.getItem('invoiceHubTheme');
+          if (savedTheme === 'light') {
+            document.body.dataset.theme = 'light';
+          }
+        } catch(e) {}
+      })();
+    </script>
     <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>

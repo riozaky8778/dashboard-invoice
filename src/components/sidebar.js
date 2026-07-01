@@ -17,6 +17,9 @@ export function renderSidebar(activePage = 'dashboard') {
   ];
 
   const isRekapActive = rekapItems.some(i => i.id === activePage);
+  const isDark = document.body?.dataset.theme !== 'light';
+  const themeIcon = isDark ? '☀️' : '🌙';
+  const themeLabel = isDark ? 'Light Mode' : 'Dark Mode';
 
   return `
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">☰</button>
@@ -47,7 +50,14 @@ export function renderSidebar(activePage = 'dashboard') {
         `).join('')}
       </nav>
       <div class="sidebar-footer">
-        <div>© 2026 InvoiceHub</div>
+        <button class="theme-toggle-btn" id="themeToggle" title="${themeLabel}">
+          <span class="theme-toggle-icon">${themeIcon}</span>
+          <span class="theme-toggle-label">${themeLabel}</span>
+          <span class="theme-toggle-track">
+            <span class="theme-toggle-thumb"></span>
+          </span>
+        </button>
+        <div class="sidebar-copyright">© 2026 InvoiceHub</div>
       </div>
     </aside>
   `;
@@ -61,6 +71,23 @@ export function initSidebarEvents(onNavigate) {
       onNavigate(page);
     });
   });
+
+  // Theme toggle
+  const themeBtn = document.getElementById('themeToggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const isLight = document.body.dataset.theme === 'light';
+      const newTheme = isLight ? 'dark' : 'light';
+      document.body.dataset.theme = newTheme;
+      localStorage.setItem('invoiceHubTheme', newTheme);
+      // Update toggle button
+      const icon = themeBtn.querySelector('.theme-toggle-icon');
+      const label = themeBtn.querySelector('.theme-toggle-label');
+      if (icon) icon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+      if (label) label.textContent = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+      themeBtn.title = newTheme === 'dark' ? 'Light Mode' : 'Dark Mode';
+    });
+  }
 
   // Mobile toggle
   const toggle = document.getElementById('sidebarToggle');
