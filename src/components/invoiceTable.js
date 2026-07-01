@@ -8,6 +8,7 @@ import {
   formatIDR, formatSAR, formatTanggal,
   getStatusBayarClass, getStatusLayananClass,
   isOverdue, isDeadlineApproaching,
+  cleanCatatan,
 } from '../utils/formatter.js';
 import { renderInvoiceFormModal, initFormEvents } from './invoiceForm.js';
 import { showToast, showConfirm } from './toast.js';
@@ -263,7 +264,7 @@ function renderRow(inv) {
       <td><span class="badge ${getStatusBayarClass(inv.statusBayar)}">${inv.statusBayar}</span></td>
       <td>${inv.metodePembayaran || '-'}</td>
       <td><span class="badge ${getStatusLayananClass(inv.statusLayanan)}">${inv.statusLayanan || '-'}</span></td>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${inv.catatan || ''}">${inv.catatan || '-'}</td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${cleanCatatan(inv.catatan)}">${cleanCatatan(inv.catatan) || '-'}</td>
       <td>
         <div class="row-actions">
           <button class="row-action-btn btn-edit" data-no="${inv.no}" title="Edit">✏️</button>

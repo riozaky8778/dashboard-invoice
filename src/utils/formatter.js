@@ -193,3 +193,16 @@ export function isOverdue(dateStr) {
   today.setHours(0, 0, 0, 0);
   return deadline < today;
 }
+
+/**
+ * Filter out JSON metadata from catatan
+ * @param {string} catatan
+ * @returns {string}
+ */
+export function cleanCatatan(catatan) {
+  if (!catatan) return '';
+  if (catatan.includes('===DATA_PESANAN===')) {
+    return catatan.split('===DATA_PESANAN===')[0].trim();
+  }
+  return catatan;
+}
