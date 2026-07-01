@@ -462,6 +462,16 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
   // Show modal with animation
   requestAnimationFrame(() => modal.classList.add('active'));
 
+  // Global calculations DOM elements (hoisted to prevent TDZ error in recalculateTotals)
+  const inputTotalIDR = document.getElementById('inputTotalIDR');
+  const inputTotalSAR = document.getElementById('inputTotalSAR');
+  const inputKurs = document.getElementById('inputKurs');
+  const inputNominalDP = document.getElementById('inputNominalDP');
+  const inputTotalTerbayar = document.getElementById('inputTotalTerbayar');
+  const inputSisaTagihan = document.getElementById('inputSisaTagihan');
+  const inputStatusBayar = document.getElementById('inputStatusBayar');
+  const inputBatasWaktuPelunasan = form.querySelector('[name="batasWaktuPelunasan"]');
+
   // Items container and state
   const itemsContainer = document.getElementById('itemsContainer');
   const btnAddItem = document.getElementById('btnAddItem');
@@ -659,15 +669,7 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
     }
   }
 
-  // Global calculations
-  const inputTotalIDR = document.getElementById('inputTotalIDR');
-  const inputTotalSAR = document.getElementById('inputTotalSAR');
-  const inputKurs = document.getElementById('inputKurs');
-  const inputNominalDP = document.getElementById('inputNominalDP');
-  const inputTotalTerbayar = document.getElementById('inputTotalTerbayar');
-  const inputSisaTagihan = document.getElementById('inputSisaTagihan');
-  const inputStatusBayar = document.getElementById('inputStatusBayar');
-  const inputBatasWaktuPelunasan = form.querySelector('[name="batasWaktuPelunasan"]');
+  // Global calculations (elements declared at top of initFormEvents)
 
   function recalculateTotals() {
     const kurs = parseFloat(inputKurs?.value) || 4290;
