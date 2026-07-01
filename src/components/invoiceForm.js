@@ -3,7 +3,7 @@
  * Handles create and edit operations with dynamic multi-item calculators
  */
 
-import { formatDateInput, hitungSisa, hitungStatusBayar, generateInvoiceNo, formatIDR, formatSAR } from '../utils/formatter.js';
+import { formatDateInput, hitungSisa, hitungStatusBayar, generateInvoiceNo, formatIDR, formatSAR, formatTanggal } from '../utils/formatter.js';
 
 /**
  * Render the invoice form modal
