@@ -111,20 +111,20 @@ export function renderInvoiceFormModal(invoice = null) {
               </div>
 
               <div class="form-group" id="detailLayananWrapper">
-                <label>Detail Layanan</label>
+                <label id="labelDetailLayanan">Detail Layanan</label>
                 <select class="form-input" id="detailLayananSelect" style="display:none;"></select>
                 <input type="text" class="form-input" id="detailLayananInput" name="detailLayanan"
                        value="${f.detailLayanan}" placeholder="Detail..." />
               </div>
 
-              <div class="form-group">
-                <label>Tgl Keberangkatan / Check-in</label>
+              <div class="form-group" id="groupTanggalKeberangkatan">
+                <label id="labelTanggalKeberangkatan">Tgl Keberangkatan / Check-in</label>
                 <input type="date" class="form-input" name="tanggalKeberangkatan"
                        value="${formatDateInput(f.tanggalKeberangkatan)}" />
               </div>
 
-              <div class="form-group">
-                <label>Tgl Selesai / Check-out</label>
+              <div class="form-group" id="groupTanggalSelesai">
+                <label id="labelTanggalSelesai">Tgl Selesai / Check-out</label>
                 <input type="date" class="form-input" name="tanggalSelesai"
                        value="${formatDateInput(f.tanggalSelesai)}" />
               </div>
@@ -136,7 +136,7 @@ export function renderInvoiceFormModal(invoice = null) {
               </div>
 
               <div class="form-group">
-                <label>Nomor Booking / PNR / Voucher</label>
+                <label id="labelNomorBooking">Nomor Booking / PNR / Voucher</label>
                 <input type="text" class="form-input" name="nomorBooking"
                        value="${f.nomorBooking}" placeholder="Kode Booking / Voucher" />
               </div>
@@ -265,16 +265,25 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
   // Show modal with animation
   requestAnimationFrame(() => modal.classList.add('active'));
 
-  // Elements for dynamic Detail Layanan
+  // Elements for dynamic Detail Layanan and labels
   const jenisSelect = document.getElementById('inputJenisLayanan');
   const detailSelect = document.getElementById('detailLayananSelect');
   const detailInput = document.getElementById('detailLayananInput');
+  
+  const labelTanggalKeberangkatan = document.getElementById('labelTanggalKeberangkatan');
+  const labelTanggalSelesai = document.getElementById('labelTanggalSelesai');
+  const groupTanggalSelesai = document.getElementById('groupTanggalSelesai');
+  const labelNomorBooking = document.getElementById('labelNomorBooking');
 
   function updateDetailLayanan() {
     const jenis = jenisSelect.value;
     const currentDetailValue = f.detailLayanan || '';
 
+    // Reset default styling
+    if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'block';
+
     if (jenis === 'Hotel (HT)') {
+      // 1. Detail Layanan options
       detailSelect.innerHTML = `
         <option value="FullBoard (FB)" ${currentDetailValue === 'FullBoard (FB)' ? 'selected' : ''}>FullBoard (FB)</option>
         <option value="Room Only (RO)" ${currentDetailValue === 'Room Only (RO)' ? 'selected' : ''}>Room Only (RO)</option>
@@ -284,7 +293,14 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
       detailSelect.name = 'detailLayanan';
       detailInput.style.display = 'none';
       detailInput.name = '';
+
+      // 2. Custom Labels
+      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Check-in';
+      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tanggal Check-out';
+      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Voucher / Booking';
+
     } else if (jenis === 'Restaurant (RT)') {
+      // 1. Detail Layanan options
       detailSelect.innerHTML = `
         <option value="FullBoard (FB)" ${currentDetailValue === 'FullBoard (FB)' ? 'selected' : ''}>FullBoard (FB)</option>
         <option value="Half Board" ${currentDetailValue === 'Half Board' ? 'selected' : ''}>Half Board</option>
@@ -295,7 +311,14 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
       detailSelect.name = 'detailLayanan';
       detailInput.style.display = 'none';
       detailInput.name = '';
+
+      // 2. Custom Labels & Visibilities
+      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Booking / Penggunaan';
+      if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'none'; // Sembunyikan tanggal selesai
+      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Reservasi / Voucher';
+
     } else if (jenis === 'Flight (FL)') {
+      // 1. Detail Layanan options
       detailSelect.innerHTML = `
         <option value="Return" ${currentDetailValue === 'Return' ? 'selected' : ''}>Return</option>
         <option value="One Way" ${currentDetailValue === 'One Way' ? 'selected' : ''}>One Way</option>
@@ -305,11 +328,35 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
       detailSelect.name = 'detailLayanan';
       detailInput.style.display = 'none';
       detailInput.name = '';
-    } else {
+
+      // 2. Custom Labels
+      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Keberangkatan';
+      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tanggal Kepulangan (Selesai)';
+      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor PNR / Booking';
+
+    } else if (jenis === 'Visa (VIS)') {
+      // 1. Input Bebas
       detailSelect.style.display = 'none';
       detailSelect.name = '';
       detailInput.style.display = 'block';
       detailInput.name = 'detailLayanan';
+
+      // 2. Custom Labels & Visibilities
+      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Rencana Pergi / Pengajuan';
+      if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'none'; // Sembunyikan tanggal selesai
+      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Paspor / Booking';
+
+    } else {
+      // 1. Input Bebas (Default lainnya)
+      detailSelect.style.display = 'none';
+      detailSelect.name = '';
+      detailInput.style.display = 'block';
+      detailInput.name = 'detailLayanan';
+
+      // 2. Default Labels
+      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tgl Keberangkatan / Check-in';
+      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tgl Selesai / Check-out';
+      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Booking / PNR / Voucher';
     }
   }
 
