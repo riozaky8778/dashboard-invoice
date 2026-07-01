@@ -1,6 +1,6 @@
 /**
  * Invoice Form Modal Component
- * Handles create and edit operations
+ * Handles create and edit operations with dynamic multi-item calculators
  */
 
 import { formatDateInput, hitungSisa, hitungStatusBayar, generateInvoiceNo } from '../utils/formatter.js';
@@ -15,6 +15,7 @@ export function renderInvoiceFormModal(invoice = null) {
   const title = isEdit ? 'Edit Invoice' : 'Tambah Invoice Baru';
   const submitLabel = isEdit ? 'Simpan Perubahan' : 'Tambah Invoice';
 
+  // Read primary fields
   const f = invoice || {
     tanggalInvoice: new Date().toISOString().split('T')[0],
     noInvoice: generateInvoiceNo(),
@@ -22,12 +23,6 @@ export function renderInvoiceFormModal(invoice = null) {
     agenCustomer: '',
     pic: '',
     cabang: '',
-    jenisLayanan: '',
-    detailLayanan: '',
-    tanggalKeberangkatan: '',
-    tanggalSelesai: '',
-    supplierVendor: '',
-    nomorBooking: '',
     totalIDR: '',
     totalSAR: '',
     kurs: '4290',
@@ -42,9 +37,15 @@ export function renderInvoiceFormModal(invoice = null) {
     catatan: '',
   };
 
+  // Filter out the JSON payload from Notes
+  let notesValue = f.catatan || '';
+  if (notesValue.includes('===DATA_PESANAN===')) {
+    notesValue = notesValue.split('===DATA_PESANAN===')[0].trim();
+  }
+
   return `
     <div class="modal-overlay" id="invoiceModal">
-      <div class="modal">
+      <div class="modal" style="max-width: 900px; width: 95%;">
         <div class="modal-header">
           <h3>${title}</h3>
           <button class="modal-close" id="modalClose" aria-label="Close">✕</button>
@@ -93,52 +94,14 @@ export function renderInvoiceFormModal(invoice = null) {
                        value="${f.cabang}" placeholder="Kantor Cabang" />
               </div>
 
-              <!-- SECTION 2: Detail Layanan -->
-              <div class="form-section-title">Detail Layanan</div>
-
-              <div class="form-group">
-                <label>Jenis Layanan</label>
-                <select class="form-input" name="jenisLayanan" id="inputJenisLayanan">
-                  <option value="" ${!f.jenisLayanan ? 'selected' : ''}>-- Pilih Layanan --</option>
-                  <option value="Hotel (HT)" ${f.jenisLayanan === 'Hotel (HT)' ? 'selected' : ''}>Hotel (HT)</option>
-                  <option value="Restaurant (RT)" ${f.jenisLayanan === 'Restaurant (RT)' ? 'selected' : ''}>Restaurant (RT)</option>
-                  <option value="Flight (FL)" ${f.jenisLayanan === 'Flight (FL)' ? 'selected' : ''}>Flight (FL)</option>
-                  <option value="Visa (VIS)" ${f.jenisLayanan === 'Visa (VIS)' ? 'selected' : ''}>Visa (VIS)</option>
-                  <option value="Full Package (FP)" ${f.jenisLayanan === 'Full Package (FP)' ? 'selected' : ''}>Full Package (FP)</option>
-                  <option value="Land Arrangement (LA)" ${f.jenisLayanan === 'Land Arrangement (LA)' ? 'selected' : ''}>Land Arrangement (LA)</option>
-                  <option value="Kereta Cepat (KP)" ${f.jenisLayanan === 'Kereta Cepat (KP)' ? 'selected' : ''}>Kereta Cepat (KP)</option>
-                </select>
+              <!-- SECTION 2: Rincian Item Pesanan -->
+              <div class="form-section-title" style="grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <span>Rincian Item Pesanan</span>
+                <button type="button" class="btn btn-secondary" id="btnAddItem" style="padding: 5px 12px; font-size: 0.8rem;">＋ Tambah Item</button>
               </div>
-
-              <div class="form-group" id="detailLayananWrapper">
-                <label id="labelDetailLayanan">Detail Layanan</label>
-                <select class="form-input" id="detailLayananSelect" style="display:none;"></select>
-                <input type="text" class="form-input" id="detailLayananInput" name="detailLayanan"
-                       value="${f.detailLayanan}" placeholder="Detail..." />
-              </div>
-
-              <div class="form-group" id="groupTanggalKeberangkatan">
-                <label id="labelTanggalKeberangkatan">Tgl Keberangkatan / Check-in</label>
-                <input type="date" class="form-input" name="tanggalKeberangkatan"
-                       value="${formatDateInput(f.tanggalKeberangkatan)}" />
-              </div>
-
-              <div class="form-group" id="groupTanggalSelesai">
-                <label id="labelTanggalSelesai">Tgl Selesai / Check-out</label>
-                <input type="date" class="form-input" name="tanggalSelesai"
-                       value="${formatDateInput(f.tanggalSelesai)}" />
-              </div>
-
-              <div class="form-group">
-                <label>Supplier / Vendor</label>
-                <input type="text" class="form-input" name="supplierVendor"
-                       value="${f.supplierVendor}" placeholder="Nama Supplier / Vendor" />
-              </div>
-
-              <div class="form-group">
-                <label id="labelNomorBooking">Nomor Booking / PNR / Voucher</label>
-                <input type="text" class="form-input" name="nomorBooking"
-                       value="${f.nomorBooking}" placeholder="Kode Booking / Voucher" />
+              
+              <div id="itemsContainer" style="grid-column: 1 / -1;">
+                <!-- Dynamic order items go here -->
               </div>
 
               <!-- SECTION 3: Batas Waktu -->
@@ -160,10 +123,9 @@ export function renderInvoiceFormModal(invoice = null) {
               <div class="form-section-title">Informasi Keuangan</div>
 
               <div class="form-group">
-                <label>Total (IDR) <span class="required">*</span></label>
-                <input type="number" class="form-input" name="totalIDR"
-                       value="${f.totalIDR || ''}" placeholder="0" min="0" required
-                       id="inputTotalIDR" />
+                <label>Kurs (SAR → IDR)</label>
+                <input type="number" class="form-input" name="kurs"
+                       value="${f.kurs || '4290'}" placeholder="4290" min="0" id="inputKurs" />
               </div>
 
               <div class="form-group">
@@ -173,9 +135,10 @@ export function renderInvoiceFormModal(invoice = null) {
               </div>
 
               <div class="form-group">
-                <label>Kurs (SAR → IDR)</label>
-                <input type="number" class="form-input" name="kurs"
-                       value="${f.kurs || '4290'}" placeholder="4290" min="0" id="inputKurs" />
+                <label>Total (IDR) <span class="required">*</span></label>
+                <input type="number" class="form-input" name="totalIDR"
+                       value="${f.totalIDR || ''}" placeholder="0" min="0" required
+                       id="inputTotalIDR" />
               </div>
 
               <div class="form-group">
@@ -236,7 +199,7 @@ export function renderInvoiceFormModal(invoice = null) {
 
               <div class="form-group" style="grid-column: 1 / -1;">
                 <label>Catatan</label>
-                <textarea class="form-input" name="catatan" rows="3" placeholder="Catatan tambahan...">${f.catatan || ''}</textarea>
+                <textarea class="form-input" id="inputCatatan" name="catatan" rows="3" placeholder="Catatan tambahan...">${notesValue}</textarea>
               </div>
             </div>
           </form>
@@ -251,6 +214,239 @@ export function renderInvoiceFormModal(invoice = null) {
 }
 
 /**
+ * HTML Templates for Dynamic Item Cards and Calculators
+ */
+function generateItemCardHTML(itemId, itemData = {}) {
+  const jenis = itemData.jenisLayanan || '';
+  
+  return `
+    <div class="item-card" data-id="${itemId}">
+      <div class="item-card-header">
+        <span class="item-card-title">Item Pesanan</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="item-total-badge" id="itemTotalBadge-${itemId}">Total: -</span>
+          <button type="button" class="btn-remove-item" data-id="${itemId}">✕</button>
+        </div>
+      </div>
+      
+      <div class="form-grid" style="padding: 0; gap: 12px 16px;">
+        <div class="form-group">
+          <label>Jenis Layanan</label>
+          <select class="form-input item-jenis" data-id="${itemId}">
+            <option value="">-- Pilih Layanan --</option>
+            <option value="Hotel (HT)" ${jenis === 'Hotel (HT)' ? 'selected' : ''}>Hotel (HT)</option>
+            <option value="Restaurant (RT)" ${jenis === 'Restaurant (RT)' ? 'selected' : ''}>Restaurant (RT)</option>
+            <option value="Flight (FL)" ${jenis === 'Flight (FL)' ? 'selected' : ''}>Flight (FL)</option>
+            <option value="Visa (VIS)" ${jenis === 'Visa (VIS)' ? 'selected' : ''}>Visa (VIS)</option>
+            <option value="Full Package (FP)" ${jenis === 'Full Package (FP)' ? 'selected' : ''}>Full Package (FP)</option>
+            <option value="Land Arrangement (LA)" ${jenis === 'Land Arrangement (LA)' ? 'selected' : ''}>Land Arrangement (LA)</option>
+            <option value="Kereta Cepat (KP)" ${jenis === 'Kereta Cepat (KP)' ? 'selected' : ''}>Kereta Cepat (KP)</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label id="lblStart-${itemId}">Tgl Mulai / Check-in</label>
+          <input type="date" class="form-input item-start" data-id="${itemId}" value="${formatDateInput(itemData.tanggalKeberangkatan)}" />
+        </div>
+        
+        <div class="form-group" id="groupEnd-${itemId}">
+          <label id="lblEnd-${itemId}">Tgl Selesai / Check-out</label>
+          <input type="date" class="form-input item-end" data-id="${itemId}" value="${formatDateInput(itemData.tanggalSelesai)}" />
+        </div>
+        
+        <div class="form-group">
+          <label>Supplier / Vendor</label>
+          <input type="text" class="form-input item-vendor" data-id="${itemId}" value="${itemData.supplierVendor || ''}" placeholder="Supplier..." />
+        </div>
+        
+        <div class="form-group">
+          <label id="lblBooking-${itemId}">Booking Code / Voucher</label>
+          <input type="text" class="form-input item-booking" data-id="${itemId}" value="${itemData.nomorBooking || ''}" placeholder="Booking..." />
+        </div>
+        
+        <div class="form-group" style="grid-column: 1 / -1;" id="calculatorContainer-${itemId}">
+          <!-- Dynamic Calculator Fields -->
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function generateCalculatorHTML(itemId, jenis, calcData = {}) {
+  if (jenis === 'Hotel (HT)') {
+    return `
+      <div class="calculator-grid">
+        <div class="form-group" style="grid-column: 1 / -1; display: flex; gap: 12px; margin-bottom: 8px;">
+          <div style="flex: 2;">
+            <label>Hotel Makkah/Madinah</label>
+            <input type="text" class="form-input calc-hotel-name" data-id="${itemId}" value="${calcData.hotelName || ''}" placeholder="Nama Hotel..." />
+          </div>
+          <div style="flex: 1;">
+            <label>Meals</label>
+            <select class="form-input calc-hotel-meals" data-id="${itemId}">
+              <option value="FB" ${calcData.meals === 'FB' ? 'selected' : ''}>FB</option>
+              <option value="RO" ${calcData.meals === 'RO' ? 'selected' : ''}>RO</option>
+              <option value="MIX" ${calcData.meals === 'MIX' ? 'selected' : ''}>MIX</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Nights</label>
+          <input type="number" class="form-input calc-nights" data-id="${itemId}" value="${calcData.nights || ''}" placeholder="Nights" />
+        </div>
+        
+        <!-- Room Qty & Rates -->
+        <div class="form-group">
+          <label>Qty DB (Double)</label>
+          <input type="number" class="form-input calc-qty-db" data-id="${itemId}" value="${calcData.qtyDB || ''}" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Rate DB (SAR)</label>
+          <input type="number" class="form-input calc-rate-db" data-id="${itemId}" value="${calcData.rateDB || ''}" placeholder="0" />
+        </div>
+        
+        <div class="form-group">
+          <label>Qty TP (Triple)</label>
+          <input type="number" class="form-input calc-qty-tp" data-id="${itemId}" value="${calcData.qtyTP || ''}" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Rate TP (SAR)</label>
+          <input type="number" class="form-input calc-rate-tp" data-id="${itemId}" value="${calcData.rateTP || ''}" placeholder="0" />
+        </div>
+        
+        <div class="form-group">
+          <label>Qty QD (Quad)</label>
+          <input type="number" class="form-input calc-qty-qd" data-id="${itemId}" value="${calcData.qtyQD || ''}" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Rate QD (SAR)</label>
+          <input type="number" class="form-input calc-rate-qd" data-id="${itemId}" value="${calcData.rateQD || ''}" placeholder="0" />
+        </div>
+        
+        <div class="form-group">
+          <label>Qty QN (Quint)</label>
+          <input type="number" class="form-input calc-qty-qn" data-id="${itemId}" value="${calcData.qtyQN || ''}" placeholder="0" />
+        </div>
+        <div class="form-group">
+          <label>Rate QN (SAR)</label>
+          <input type="number" class="form-input calc-rate-qn" data-id="${itemId}" value="${calcData.rateQN || ''}" placeholder="0" />
+        </div>
+      </div>
+    `;
+  } else if (jenis === 'Restaurant (RT)') {
+    return `
+      <div class="calculator-grid">
+        <div class="form-group">
+          <label>Type Meals</label>
+          <input type="text" class="form-input calc-rest-type" data-id="${itemId}" value="${calcData.mealsType || 'Fullboard'}" placeholder="Type..." />
+        </div>
+        <div class="form-group">
+          <label>Day</label>
+          <input type="number" class="form-input calc-rest-day" data-id="${itemId}" value="${calcData.days || '1'}" placeholder="Days" />
+        </div>
+        <div class="form-group">
+          <label>Frekuensi</label>
+          <input type="number" class="form-input calc-rest-freq" data-id="${itemId}" value="${calcData.freq || '3'}" placeholder="Freq" />
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Price/Meal/Pax (SAR)</label>
+          <input type="number" class="form-input calc-price" data-id="${itemId}" value="${calcData.price || ''}" placeholder="SAR" />
+        </div>
+      </div>
+    `;
+  } else if (jenis === 'Flight (FL)') {
+    return `
+      <div class="calculator-grid">
+        <div class="form-group" style="grid-column: 1 / -2;">
+          <label>Segment</label>
+          <input type="text" class="form-input calc-flight-segment" data-id="${itemId}" value="${calcData.segment || ''}" placeholder="e.g. SUBJED - JEDSUB" />
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select class="form-input calc-flight-type" data-id="${itemId}">
+            <option value="Return" ${calcData.flightType === 'Return' ? 'selected' : ''}>Return</option>
+            <option value="One Way" ${calcData.flightType === 'One Way' ? 'selected' : ''}>One Way</option>
+            <option value="MIX" ${calcData.flightType === 'MIX' ? 'selected' : ''}>MIX</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Price/Pax (IDR)</label>
+          <input type="number" class="form-input calc-price" data-id="${itemId}" value="${calcData.price || ''}" placeholder="IDR" />
+        </div>
+      </div>
+    `;
+  } else if (jenis === 'Full Package (FP)' || jenis === 'Land Arrangement (LA)') {
+    return `
+      <div class="calculator-grid">
+        <div class="form-group" style="grid-column: 1 / -2;">
+          <label>Group</label>
+          <input type="text" class="form-input calc-group-name" data-id="${itemId}" value="${calcData.groupName || ''}" placeholder="Group name..." />
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Price/Pax (IDR)</label>
+          <input type="number" class="form-input calc-price" data-id="${itemId}" value="${calcData.price || ''}" placeholder="IDR" />
+        </div>
+      </div>
+    `;
+  } else if (jenis === 'Visa (VIS)') {
+    return `
+      <div class="calculator-grid">
+        <div class="form-group" style="grid-column: 1 / -2;">
+          <label>Item</label>
+          <input type="text" class="form-input calc-visa-item" data-id="${itemId}" value="${calcData.visaItem || 'Visa + Bus'}" placeholder="Item..." />
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Price/Pax (SAR)</label>
+          <input type="number" class="form-input calc-price" data-id="${itemId}" value="${calcData.price || ''}" placeholder="SAR" />
+        </div>
+      </div>
+    `;
+  } else {
+    // Default / Lainnya
+    return `
+      <div class="calculator-grid">
+        <div class="form-group" style="grid-column: 1 / -2;">
+          <label>Deskripsi Layanan</label>
+          <input type="text" class="form-input calc-manual-desc" data-id="${itemId}" value="${calcData.manualDesc || ''}" placeholder="Keterangan..." />
+        </div>
+        <div class="form-group">
+          <label>Pax</label>
+          <input type="number" class="form-input calc-pax" data-id="${itemId}" value="${calcData.pax || ''}" placeholder="Pax" />
+        </div>
+        <div class="form-group">
+          <label>Harga per Pax (IDR)</label>
+          <input type="number" class="form-input calc-manual-idr" data-id="${itemId}" value="${calcData.manualIDR || ''}" placeholder="IDR" />
+        </div>
+        <div class="form-group">
+          <label>Harga per Pax (SAR)</label>
+          <input type="number" class="form-input calc-manual-sar" data-id="${itemId}" value="${calcData.manualSAR || ''}" placeholder="SAR" />
+        </div>
+      </div>
+    `;
+  }
+}
+
+/**
  * Initialize form events (auto-calculation, submit, close)
  * @param {Function} onSubmit - callback with form data
  * @param {Function} onClose - callback to close modal
@@ -260,139 +456,351 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
   const form = document.getElementById('invoiceForm');
   if (!modal || !form) return;
 
+  const isEdit = !!invoice;
   const f = invoice || {};
 
   // Show modal with animation
   requestAnimationFrame(() => modal.classList.add('active'));
 
-  // Elements for dynamic Detail Layanan and labels
-  const jenisSelect = document.getElementById('inputJenisLayanan');
-  const detailSelect = document.getElementById('detailLayananSelect');
-  const detailInput = document.getElementById('detailLayananInput');
+  // Items container and state
+  const itemsContainer = document.getElementById('itemsContainer');
+  const btnAddItem = document.getElementById('btnAddItem');
   
-  const labelTanggalKeberangkatan = document.getElementById('labelTanggalKeberangkatan');
-  const labelTanggalSelesai = document.getElementById('labelTanggalSelesai');
-  const groupTanggalSelesai = document.getElementById('groupTanggalSelesai');
-  const labelNomorBooking = document.getElementById('labelNomorBooking');
-
-  function updateDetailLayanan() {
-    const jenis = jenisSelect.value;
-    const currentDetailValue = f.detailLayanan || '';
-
-    // Reset default styling
-    if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'block';
-
-    if (jenis === 'Hotel (HT)') {
-      // 1. Detail Layanan options
-      detailSelect.innerHTML = `
-        <option value="FullBoard (FB)" ${currentDetailValue === 'FullBoard (FB)' ? 'selected' : ''}>FullBoard (FB)</option>
-        <option value="Room Only (RO)" ${currentDetailValue === 'Room Only (RO)' ? 'selected' : ''}>Room Only (RO)</option>
-        <option value="MIX" ${currentDetailValue === 'MIX' ? 'selected' : ''}>MIX</option>
-      `;
-      detailSelect.style.display = 'block';
-      detailSelect.name = 'detailLayanan';
-      detailInput.style.display = 'none';
-      detailInput.name = '';
-
-      // 2. Custom Labels
-      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Check-in';
-      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tanggal Check-out';
-      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Voucher / Booking';
-
-    } else if (jenis === 'Restaurant (RT)') {
-      // 1. Detail Layanan options
-      detailSelect.innerHTML = `
-        <option value="FullBoard (FB)" ${currentDetailValue === 'FullBoard (FB)' ? 'selected' : ''}>FullBoard (FB)</option>
-        <option value="Half Board" ${currentDetailValue === 'Half Board' ? 'selected' : ''}>Half Board</option>
-        <option value="Meals (1)" ${currentDetailValue === 'Meals (1)' ? 'selected' : ''}>Meals (1)</option>
-        <option value="MIX" ${currentDetailValue === 'MIX' ? 'selected' : ''}>MIX</option>
-      `;
-      detailSelect.style.display = 'block';
-      detailSelect.name = 'detailLayanan';
-      detailInput.style.display = 'none';
-      detailInput.name = '';
-
-      // 2. Custom Labels & Visibilities
-      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Booking / Penggunaan';
-      if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'none'; // Sembunyikan tanggal selesai
-      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Reservasi / Voucher';
-
-    } else if (jenis === 'Flight (FL)') {
-      // 1. Detail Layanan options
-      detailSelect.innerHTML = `
-        <option value="Return" ${currentDetailValue === 'Return' ? 'selected' : ''}>Return</option>
-        <option value="One Way" ${currentDetailValue === 'One Way' ? 'selected' : ''}>One Way</option>
-        <option value="MIX" ${currentDetailValue === 'MIX' ? 'selected' : ''}>MIX</option>
-      `;
-      detailSelect.style.display = 'block';
-      detailSelect.name = 'detailLayanan';
-      detailInput.style.display = 'none';
-      detailInput.name = '';
-
-      // 2. Custom Labels
-      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Keberangkatan';
-      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tanggal Kepulangan (Selesai)';
-      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor PNR / Booking';
-
-    } else if (jenis === 'Visa (VIS)') {
-      // 1. Input Bebas
-      detailSelect.style.display = 'none';
-      detailSelect.name = '';
-      detailInput.style.display = 'block';
-      detailInput.name = 'detailLayanan';
-
-      // 2. Custom Labels & Visibilities
-      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tanggal Rencana Pergi / Pengajuan';
-      if (groupTanggalSelesai) groupTanggalSelesai.style.display = 'none'; // Sembunyikan tanggal selesai
-      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Paspor / Booking';
-
-    } else {
-      // 1. Input Bebas (Default lainnya)
-      detailSelect.style.display = 'none';
-      detailSelect.name = '';
-      detailInput.style.display = 'block';
-      detailInput.name = 'detailLayanan';
-
-      // 2. Default Labels
-      if (labelTanggalKeberangkatan) labelTanggalKeberangkatan.textContent = 'Tgl Keberangkatan / Check-in';
-      if (labelTanggalSelesai) labelTanggalSelesai.textContent = 'Tgl Selesai / Check-out';
-      if (labelNomorBooking) labelNomorBooking.textContent = 'Nomor Booking / PNR / Voucher';
+  // Extract items list from notes payload
+  let orderItems = [];
+  if (isEdit && f.catatan && f.catatan.includes('===DATA_PESANAN===')) {
+    try {
+      const jsonStr = f.catatan.split('===DATA_PESANAN===')[1].trim();
+      orderItems = JSON.parse(jsonStr);
+    } catch (e) {
+      console.error('Failed to parse items data:', e);
     }
   }
 
-  // Bind change event to Jenis Layanan dropdown
-  jenisSelect?.addEventListener('change', updateDetailLayanan);
-  updateDetailLayanan(); // Run once initially
+  // Fallback for old single-service invoices
+  if (isEdit && orderItems.length === 0) {
+    orderItems = [{
+      id: Date.now(),
+      jenisLayanan: f.jenisLayanan || '',
+      tanggalKeberangkatan: f.tanggalKeberangkatan || '',
+      tanggalSelesai: f.tanggalSelesai || '',
+      supplierVendor: f.supplierVendor || '',
+      nomorBooking: f.nomorBooking || '',
+      detailLayanan: f.detailLayanan || '',
+      calcData: {} // Empty calculator data
+    }];
+  }
 
-  // Auto-calculate sisa tagihan & status bayar
+  // Add first item if new invoice
+  if (!isEdit && orderItems.length === 0) {
+    addNewItem();
+  } else {
+    // Render existing items
+    orderItems.forEach(item => {
+      renderItemCard(item);
+    });
+  }
+
+  function addNewItem() {
+    const newItem = {
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
+      jenisLayanan: '',
+      tanggalKeberangkatan: '',
+      tanggalSelesai: '',
+      supplierVendor: '',
+      nomorBooking: '',
+      detailLayanan: '',
+      calcData: {}
+    };
+    orderItems.push(newItem);
+    renderItemCard(newItem);
+    recalculateTotals();
+  }
+
+  function renderItemCard(item) {
+    const cardHTML = generateItemCardHTML(item.id, item);
+    itemsContainer.insertAdjacentHTML('beforeend', cardHTML);
+    
+    const cardEl = itemsContainer.querySelector(`[data-id="${item.id}"]`);
+    const jenisSelect = cardEl.querySelector('.item-jenis');
+    
+    // Initial calculator render
+    updateCalculator(item.id, item.jenisLayanan, item.calcData);
+    
+    // Bind event listeners
+    jenisSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      item.jenisLayanan = val;
+      item.calcData = {}; // Clear old calculator data
+      
+      // Update Labels
+      updateItemLabels(item.id, val);
+      
+      // Re-render Calculator
+      updateCalculator(item.id, val, item.calcData);
+      recalculateTotals();
+    });
+
+    // Run labels updates once initially
+    updateItemLabels(item.id, item.jenisLayanan);
+
+    // Bind inputs changes inside item card
+    cardEl.addEventListener('input', (e) => {
+      const target = e.target;
+      
+      // Update item values
+      if (target.classList.contains('item-start')) item.tanggalKeberangkatan = target.value;
+      if (target.classList.contains('item-end')) item.tanggalSelesai = target.value;
+      if (target.classList.contains('item-vendor')) item.supplierVendor = target.value;
+      if (target.classList.contains('item-booking')) item.nomorBooking = target.value;
+      
+      // Update calculator fields
+      if (target.classList.contains('calc-hotel-name')) item.calcData.hotelName = target.value;
+      if (target.classList.contains('calc-hotel-meals')) item.calcData.meals = target.value;
+      if (target.classList.contains('calc-pax')) item.calcData.pax = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-nights')) item.calcData.nights = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-qty-db')) item.calcData.qtyDB = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-rate-db')) item.calcData.rateDB = parseFloat(target.value) || 0;
+      if (target.classList.contains('calc-qty-tp')) item.calcData.qtyTP = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-rate-tp')) item.calcData.rateTP = parseFloat(target.value) || 0;
+      if (target.classList.contains('calc-qty-qd')) item.calcData.qtyQD = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-rate-qd')) item.calcData.rateQD = parseFloat(target.value) || 0;
+      if (target.classList.contains('calc-qty-qn')) item.calcData.qtyQN = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-rate-qn')) item.calcData.rateQN = parseFloat(target.value) || 0;
+      
+      if (target.classList.contains('calc-rest-type')) item.calcData.mealsType = target.value;
+      if (target.classList.contains('calc-rest-day')) item.calcData.days = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-rest-freq')) item.calcData.freq = parseInt(target.value) || 0;
+      if (target.classList.contains('calc-price')) item.calcData.price = parseFloat(target.value) || 0;
+      
+      if (target.classList.contains('calc-flight-segment')) item.calcData.segment = target.value;
+      if (target.classList.contains('calc-flight-type')) item.calcData.flightType = target.value;
+      
+      if (target.classList.contains('calc-group-name')) item.calcData.groupName = target.value;
+      if (target.classList.contains('calc-visa-item')) item.calcData.visaItem = target.value;
+      
+      if (target.classList.contains('calc-manual-desc')) item.calcData.manualDesc = target.value;
+      if (target.classList.contains('calc-manual-idr')) item.calcData.manualIDR = parseFloat(target.value) || 0;
+      if (target.classList.contains('calc-manual-sar')) item.calcData.manualSAR = parseFloat(target.value) || 0;
+
+      recalculateTotals();
+    });
+
+    // Remove item button handler
+    cardEl.querySelector('.btn-remove-item').addEventListener('click', () => {
+      if (orderItems.length <= 1) {
+        alert('Invoice minimal harus memiliki 1 item pesanan.');
+        return;
+      }
+      cardEl.remove();
+      orderItems = orderItems.filter(i => i.id !== item.id);
+      recalculateTotals();
+    });
+  }
+
+  function updateItemLabels(itemId, jenis) {
+    const groupEnd = document.getElementById(`groupEnd-${itemId}`);
+    const lblStart = document.getElementById(`lblStart-${itemId}`);
+    const lblEnd = document.getElementById(`lblEnd-${itemId}`);
+    const lblBooking = document.getElementById(`lblBooking-${itemId}`);
+
+    if (groupEnd) groupEnd.style.display = 'block';
+
+    if (jenis === 'Hotel (HT)') {
+      if (lblStart) lblStart.textContent = 'Tanggal Check-in';
+      if (lblEnd) lblEnd.textContent = 'Tanggal Check-out';
+      if (lblBooking) lblBooking.textContent = 'Nomor Voucher / Booking';
+    } else if (jenis === 'Restaurant (RT)') {
+      if (lblStart) lblStart.textContent = 'Tanggal Booking / Penggunaan';
+      if (groupEnd) groupEnd.style.display = 'none';
+      if (lblBooking) lblBooking.textContent = 'Nomor Reservasi / Voucher';
+    } else if (jenis === 'Flight (FL)') {
+      if (lblStart) lblStart.textContent = 'Tanggal Keberangkatan';
+      if (lblEnd) lblEnd.textContent = 'Tanggal Kepulangan (Selesai)';
+      if (lblBooking) lblBooking.textContent = 'Nomor PNR / Booking';
+    } else if (jenis === 'Visa (VIS)') {
+      if (lblStart) lblStart.textContent = 'Tanggal Rencana Pergi / Pengajuan';
+      if (groupEnd) groupEnd.style.display = 'none';
+      if (lblBooking) lblBooking.textContent = 'Nomor Paspor / Booking';
+    } else {
+      if (lblStart) lblStart.textContent = 'Tgl Mulai / Check-in';
+      if (lblEnd) lblEnd.textContent = 'Tgl Selesai / Check-out';
+      if (lblBooking) lblBooking.textContent = 'Nomor Booking / PNR / Voucher';
+    }
+  }
+
+  function updateCalculator(itemId, jenis, calcData) {
+    const container = document.getElementById(`calculatorContainer-${itemId}`);
+    if (!container) return;
+    
+    container.innerHTML = generateCalculatorHTML(itemId, jenis, calcData);
+    
+    // Bind meal type select dynamically inside container if needed
+    const mealsSelect = container.querySelector('.calc-hotel-meals');
+    if (mealsSelect) {
+      mealsSelect.addEventListener('change', (e) => {
+        const item = orderItems.find(i => i.id === itemId);
+        if (item) {
+          item.calcData.meals = e.target.value;
+          recalculateTotals();
+        }
+      });
+    }
+
+    const flightTypeSelect = container.querySelector('.calc-flight-type');
+    if (flightTypeSelect) {
+      flightTypeSelect.addEventListener('change', (e) => {
+        const item = orderItems.find(i => i.id === itemId);
+        if (item) {
+          item.calcData.flightType = e.target.value;
+          recalculateTotals();
+        }
+      });
+    }
+  }
+
+  // Global calculations
   const inputTotalIDR = document.getElementById('inputTotalIDR');
+  const inputTotalSAR = document.getElementById('inputTotalSAR');
+  const inputKurs = document.getElementById('inputKurs');
   const inputNominalDP = document.getElementById('inputNominalDP');
   const inputTotalTerbayar = document.getElementById('inputTotalTerbayar');
   const inputSisaTagihan = document.getElementById('inputSisaTagihan');
   const inputStatusBayar = document.getElementById('inputStatusBayar');
   const inputBatasWaktuPelunasan = form.querySelector('[name="batasWaktuPelunasan"]');
 
-  function recalculate() {
-    const totalIDR = parseFloat(inputTotalIDR?.value) || 0;
+  function recalculateTotals() {
+    const kurs = parseFloat(inputKurs?.value) || 4290;
+    
+    let sumTotalIDR = 0;
+    let sumTotalSAR = 0;
+
+    orderItems.forEach(item => {
+      let itemTotal = 0;
+      let currency = 'IDR';
+      const c = item.calcData;
+
+      if (item.jenisLayanan === 'Hotel (HT)') {
+        const nights = c.nights || 0;
+        const totalRoomsRate = 
+          ((c.qtyDB || 0) * (c.rateDB || 0)) +
+          ((c.qtyTP || 0) * (c.rateTP || 0)) +
+          ((c.qtyQD || 0) * (c.rateQD || 0)) +
+          ((c.qtyQN || 0) * (c.rateQN || 0));
+        itemTotal = totalRoomsRate * nights;
+        currency = 'SAR';
+        sumTotalSAR += itemTotal;
+        
+        // Auto-generate human-readable detail
+        const hotelName = c.hotelName || '-';
+        const meals = c.meals || 'FB';
+        const pax = c.pax || 0;
+        const roomStrings = [];
+        if (c.qtyDB) roomStrings.push(`${c.qtyDB}xDB`);
+        if (c.qtyTP) roomStrings.push(`${c.qtyTP}xTP`);
+        if (c.qtyQD) roomStrings.push(`${c.qtyQD}xQD`);
+        if (c.qtyQN) roomStrings.push(`${c.qtyQN}xQN`);
+        item.detailLayanan = `${hotelName} (${meals}) | ${pax} Pax | ${nights}N | Room: ${roomStrings.join(', ')}`;
+        
+      } else if (item.jenisLayanan === 'Restaurant (RT)') {
+        const days = c.days || 1;
+        const freq = c.freq || 3;
+        const pax = c.pax || 0;
+        const price = c.price || 0;
+        itemTotal = days * freq * pax * price;
+        currency = 'SAR';
+        sumTotalSAR += itemTotal;
+
+        const mType = c.mealsType || 'Fullboard';
+        item.detailLayanan = `${mType} | ${pax} Pax | ${days} Hari | Freq: ${freq}x`;
+
+      } else if (item.jenisLayanan === 'Flight (FL)') {
+        const pax = c.pax || 0;
+        const price = c.price || 0;
+        itemTotal = pax * price;
+        currency = 'IDR';
+        sumTotalIDR += itemTotal;
+
+        const segment = c.segment || '-';
+        const fType = c.flightType || 'Return';
+        item.detailLayanan = `${segment} (${fType}) | ${pax} Pax`;
+
+      } else if (item.jenisLayanan === 'Full Package (FP)' || item.jenisLayanan === 'Land Arrangement (LA)') {
+        const pax = c.pax || 0;
+        const price = c.price || 0;
+        itemTotal = pax * price;
+        currency = 'IDR';
+        sumTotalIDR += itemTotal;
+
+        const gName = c.groupName || '-';
+        item.detailLayanan = `Group: ${gName} | ${pax} Pax`;
+
+      } else if (item.jenisLayanan === 'Visa (VIS)') {
+        const pax = c.pax || 0;
+        const price = c.price || 0;
+        itemTotal = pax * price;
+        currency = 'SAR';
+        sumTotalSAR += itemTotal;
+
+        const visaItem = c.visaItem || 'Visa';
+        item.detailLayanan = `${visaItem} | ${pax} Pax`;
+
+      } else {
+        // Default / Manual
+        const pax = c.pax || 0;
+        const idr = c.manualIDR || 0;
+        const sar = c.manualSAR || 0;
+        
+        if (idr > 0) {
+          itemTotal = pax ? pax * idr : idr;
+          currency = 'IDR';
+          sumTotalIDR += itemTotal;
+        } else {
+          itemTotal = pax ? pax * sar : sar;
+          currency = 'SAR';
+          sumTotalSAR += itemTotal;
+        }
+        item.detailLayanan = `${c.manualDesc || 'Lainnya'} | ${pax} Pax`;
+      }
+
+      // Update item total badge
+      const badge = document.getElementById(`itemTotalBadge-${item.id}`);
+      if (badge) {
+        badge.textContent = currency === 'SAR' ? `Total: ${formatSAR(itemTotal)}` : `Total: ${formatIDR(itemTotal)}`;
+      }
+    });
+
+    // Calculate aggregated Total IDR (SAR total * kurs + IDR total)
+    const overallTotalIDR = sumTotalIDR + (sumTotalSAR * kurs);
+
+    // Set values to form inputs
+    if (inputTotalSAR) inputTotalSAR.value = sumTotalSAR > 0 ? sumTotalSAR.toFixed(2) : '';
+    if (inputTotalIDR) inputTotalIDR.value = overallTotalIDR > 0 ? Math.round(overallTotalIDR) : '';
+
+    // Calculate balance & status
     const nominalDP = parseFloat(inputNominalDP?.value) || 0;
     const totalTerbayar = parseFloat(inputTotalTerbayar?.value) || 0;
     const deadline = inputBatasWaktuPelunasan?.value || '';
 
-    const sisa = hitungSisa(totalIDR, totalTerbayar);
+    const sisa = hitungSisa(overallTotalIDR, totalTerbayar);
     if (inputSisaTagihan) inputSisaTagihan.value = sisa;
 
     const currentStatus = inputStatusBayar?.value;
     const isAutoCalculatedStatus = !currentStatus || ['Menunggu Pembayaran', 'DP', 'Lunas', 'Jatuh Tempo'].includes(currentStatus);
 
     if (isAutoCalculatedStatus) {
-      const status = hitungStatusBayar(totalIDR, nominalDP, totalTerbayar, deadline);
+      const status = hitungStatusBayar(overallTotalIDR, nominalDP, totalTerbayar, deadline);
       if (inputStatusBayar) inputStatusBayar.value = status;
     }
   }
 
-  [inputTotalIDR, inputNominalDP, inputTotalTerbayar, inputBatasWaktuPelunasan].forEach(el => {
-    if (el) el.addEventListener('input', recalculate);
+  // Bind change events to currency input/kurs change
+  [inputKurs, inputNominalDP, inputTotalTerbayar, inputBatasWaktuPelunasan].forEach(el => {
+    if (el) el.addEventListener('input', recalculateTotals);
   });
+
+  // Bind Add Item button
+  btnAddItem.addEventListener('click', addNewItem);
 
   // Close handlers
   const closeModal = () => {
@@ -416,7 +824,6 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
     const formData = new FormData(form);
     const data = {};
     formData.forEach((value, key) => {
-      // Convert numeric fields
       if (['totalIDR', 'totalSAR', 'kurs', 'nominalDP', 'totalTerbayar', 'no'].includes(key)) {
         data[key] = parseFloat(value) || 0;
       } else {
@@ -424,7 +831,34 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
       }
     });
 
-    // Set calculated fields
+    // Compile items details into a single human-readable line for Google Sheets 'Detail Layanan'
+    const summaryLines = orderItems.map((item, index) => {
+      const startStr = item.tanggalKeberangkatan ? formatTanggal(item.tanggalKeberangkatan) : '';
+      const endStr = item.tanggalSelesai ? formatTanggal(item.tanggalSelesai) : '';
+      const dateRange = startStr ? ` (${startStr}${endStr ? ' - ' + endStr : ''})` : '';
+      return `${index + 1}. [${item.jenisLayanan}] ${item.detailLayanan}${dateRange}`;
+    });
+    data.detailLayanan = summaryLines.join('\n');
+
+    // Aggregate primary fields based on items list
+    const validStarts = orderItems.map(i => i.tanggalKeberangkatan).filter(d => d);
+    const validEnds = orderItems.map(i => i.tanggalSelesai).filter(d => d);
+
+    data.tanggalKeberangkatan = validStarts.length > 0 ? validStarts.reduce((a, b) => a < b ? a : b) : '';
+    data.tanggalSelesai = validEnds.length > 0 ? validEnds.reduce((a, b) => a > b ? a : b) : '';
+
+    // Primary Service values (pick the first item's type/vendor/booking as representational info)
+    if (orderItems.length > 0) {
+      data.jenisLayanan = orderItems[0].jenisLayanan || '';
+      data.supplierVendor = orderItems.map(i => i.supplierVendor).filter(v => v).join(', ') || '';
+      data.nomorBooking = orderItems.map(i => i.nomorBooking).filter(b => b).join(', ') || '';
+    }
+
+    // Attach raw items payload to Notes for edit reconstruction
+    const userNotes = document.getElementById('inputCatatan').value.trim();
+    const jsonStr = JSON.stringify(orderItems);
+    data.catatan = userNotes ? `${userNotes}\n\n===DATA_PESANAN===\n${jsonStr}` : `===DATA_PESANAN===\n${jsonStr}`;
+
     data.sisaTagihan = hitungSisa(data.totalIDR, data.totalTerbayar);
     data.statusBayar = hitungStatusBayar(data.totalIDR, data.nominalDP, data.totalTerbayar, data.batasWaktuPelunasan);
 
@@ -432,6 +866,6 @@ export function initFormEvents(onSubmit, onClose, invoice = null) {
     closeModal();
   });
 
-  // Initial calculation
-  recalculate();
+  // Run initial calculations
+  recalculateTotals();
 }
