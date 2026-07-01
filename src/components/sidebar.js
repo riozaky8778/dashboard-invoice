@@ -3,10 +3,20 @@
  */
 
 export function renderSidebar(activePage = 'dashboard') {
-  const menuItems = [
+  const mainItems = [
     { id: 'dashboard', icon: '📊', label: 'Dashboard' },
     { id: 'invoices', icon: '📋', label: 'Data Invoice' },
   ];
+
+  const rekapItems = [
+    { id: 'rekap-hotel',      icon: '🏨', label: 'Hotel' },
+    { id: 'rekap-restaurant', icon: '🍽️', label: 'Restaurant' },
+    { id: 'rekap-flight',     icon: '✈️', label: 'Penerbangan' },
+    { id: 'rekap-visa',       icon: '🛂', label: 'Visa' },
+    { id: 'rekap-umroh',      icon: '🕌', label: 'Umroh / FP' },
+  ];
+
+  const isRekapActive = rekapItems.some(i => i.id === activePage);
 
   return `
     <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">☰</button>
@@ -19,8 +29,17 @@ export function renderSidebar(activePage = 'dashboard') {
         </div>
       </div>
       <nav class="sidebar-nav">
-        ${menuItems.map(item => `
+        ${mainItems.map(item => `
           <div class="sidebar-nav-item ${activePage === item.id ? 'active' : ''}"
+               data-page="${item.id}" id="nav-${item.id}">
+            <span class="sidebar-nav-icon">${item.icon}</span>
+            <span>${item.label}</span>
+          </div>
+        `).join('')}
+
+        <div class="sidebar-section-label">Rekap per Layanan</div>
+        ${rekapItems.map(item => `
+          <div class="sidebar-nav-item sidebar-nav-sub ${activePage === item.id ? 'active' : ''}"
                data-page="${item.id}" id="nav-${item.id}">
             <span class="sidebar-nav-icon">${item.icon}</span>
             <span>${item.label}</span>

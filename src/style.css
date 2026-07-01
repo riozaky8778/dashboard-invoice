@@ -244,6 +244,135 @@ a {
   flex-shrink: 0;
 }
 
+.sidebar-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 12px 16px 4px;
+  margin-top: 4px;
+}
+
+.sidebar-nav-sub {
+  padding: 9px 16px 9px 24px;
+  font-size: 0.875rem;
+}
+
+/* ---- Rekap Stats ---- */
+.rekap-stats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.rekap-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 14px 20px;
+  min-width: 120px;
+  text-align: center;
+  backdrop-filter: var(--glass-blur);
+}
+
+.rekap-stat-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-accent);
+  line-height: 1.2;
+}
+
+.rekap-stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+/* ---- Rekap Table ---- */
+.rekap-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.rekap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.83rem;
+  min-width: 600px;
+}
+
+.rekap-table th,
+.rekap-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  white-space: nowrap;
+}
+
+.rekap-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(20, 20, 60, 0.95);
+}
+
+.rekap-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rekap-table .group-header {
+  text-align: center;
+  background: rgba(124, 58, 237, 0.2);
+  color: var(--text-accent);
+  font-size: 0.7rem;
+}
+
+.rekap-table .sub-header th {
+  background: rgba(124, 58, 237, 0.08);
+  text-align: center;
+}
+
+.rekap-table tbody tr {
+  transition: background var(--transition-fast);
+}
+
+.rekap-table tbody tr:hover {
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.rekap-table tfoot tr {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.rekap-table tfoot td {
+  font-weight: 700;
+  border-top: 1px solid rgba(124, 58, 237, 0.3);
+}
+
+.rekap-table .amount-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-purple {
+  background: rgba(124, 58, 237, 0.18);
+  color: var(--text-accent);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-block;
+}
+
 .sidebar-footer {
   padding: 16px 20px;
   border-top: 1px solid var(--border-color);

@@ -7,6 +7,10 @@ import './style.css';
 import { renderSidebar, initSidebarEvents } from './components/sidebar.js';
 import { renderDashboard, initDashboard } from './components/dashboard.js';
 import { renderInvoiceTable, initInvoiceTable } from './components/invoiceTable.js';
+import { renderRekapPage, initRekapPage } from './components/rekapDetail.js';
+
+const VALID_PAGES = ['dashboard', 'invoices', 'rekap-hotel', 'rekap-restaurant', 'rekap-flight', 'rekap-visa', 'rekap-umroh'];
+const REKAP_PAGES = ['rekap-hotel', 'rekap-restaurant', 'rekap-flight', 'rekap-visa', 'rekap-umroh'];
 
 let currentPage = 'dashboard';
 
@@ -18,15 +22,19 @@ async function renderApp() {
   const sidebarHTML = renderSidebar(currentPage);
   let pageHTML = '';
 
-  switch (currentPage) {
-    case 'dashboard':
-      pageHTML = await renderDashboard();
-      break;
-    case 'invoices':
-      pageHTML = await renderInvoiceTable();
-      break;
-    default:
-      pageHTML = await renderDashboard();
+  if (REKAP_PAGES.includes(currentPage)) {
+    pageHTML = await renderRekapPage(currentPage);
+  } else {
+    switch (currentPage) {
+      case 'dashboard':
+        pageHTML = await renderDashboard();
+        break;
+      case 'invoices':
+        pageHTML = await renderInvoiceTable();
+        break;
+      default:
+        pageHTML = await renderDashboard();
+    }
   }
 
   app.innerHTML = sidebarHTML + pageHTML;
@@ -37,13 +45,17 @@ async function renderApp() {
   });
 
   // Initialize page-specific logic
-  switch (currentPage) {
-    case 'dashboard':
-      await initDashboard();
-      break;
-    case 'invoices':
-      await initInvoiceTable();
-      break;
+  if (REKAP_PAGES.includes(currentPage)) {
+    await initRekapPage(currentPage);
+  } else {
+    switch (currentPage) {
+      case 'dashboard':
+        await initDashboard();
+        break;
+      case 'invoices':
+        await initInvoiceTable();
+        break;
+    }
   }
 }
 
@@ -70,7 +82,7 @@ window.addEventListener('hashchange', () => {
 function init() {
   // Read initial page from hash
   const hash = window.location.hash.replace('#', '');
-  if (hash && ['dashboard', 'invoices'].includes(hash)) {
+  if (hash && VALID_PAGES.includes(hash)) {
     currentPage = hash;
   }
 
