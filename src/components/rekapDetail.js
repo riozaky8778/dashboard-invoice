@@ -37,12 +37,12 @@ export async function renderRekapPage(pageId) {
   if (!config) return '<div class="page-content"><p>Halaman tidak ditemukan.</p></div>';
 
   return `
-    <div class="page-content" id="rekapPage">
-      <div class="page-header">
-        <div>
-          <h2>${config.icon} ${config.label}</h2>
-          <p class="page-subtitle">Rekap seluruh item layanan dari semua invoice</p>
-        </div>
+    <div class="main-content">
+      <div style="margin-bottom:24px;">
+        <h2 style="font-size:1.5rem;font-weight:800;color:var(--text-primary);display:flex;align-items:center;gap:10px;">
+          ${config.icon} ${config.label}
+        </h2>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-top:4px;">Rekap seluruh item layanan dari semua invoice</p>
       </div>
       <div id="rekapContent">
         <div class="loading-spinner">
