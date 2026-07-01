@@ -1421,3 +1421,120 @@ a {
   font-size: 0.8rem;
   font-weight: 700;
 }
+
+/* ---- Expandable Detail Panel ---- */
+.detail-expand-row td {
+  background: rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(124, 58, 237, 0.2) !important;
+  border-bottom: 2px solid rgba(124, 58, 237, 0.3) !important;
+}
+
+.detail-panel-inner {
+  padding: 16px 20px 20px;
+}
+
+.detail-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(124, 58, 237, 0.12);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-accent);
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  background: rgba(124, 58, 237, 0.1);
+  border-left: 3px solid var(--text-accent);
+  border-radius: 0 4px 4px 0;
+  display: inline-block;
+}
+
+.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 6px 10px;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.detail-table thead {
+  background: rgba(124, 58, 237, 0.18);
+}
+
+.detail-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-table .group-header {
+  text-align: center;
+  background: rgba(124, 58, 237, 0.25);
+  color: var(--text-accent);
+}
+
+.detail-table .sub-header th {
+  background: rgba(124, 58, 237, 0.1);
+  text-align: center;
+}
+
+.detail-table tbody tr {
+  background: rgba(255, 255, 255, 0.02);
+  transition: background var(--transition-fast);
+}
+
+.detail-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.detail-table .amount-cell {
+  font-weight: 700;
+  color: var(--text-accent);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 4px 4px;
+}
+
+.detail-meta code {
+  background: rgba(255,255,255,0.06);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}

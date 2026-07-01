@@ -238,9 +238,17 @@ function renderRow(inv) {
                         isDeadlineApproaching(inv.batasWaktuPelunasan) ? 'date-approaching' : '';
   const sisaClass = inv.sisaTagihan <= 0 ? 'sisa-zero' : '';
 
+  // Check if this invoice has multi-item data
+  const hasDetailItems = inv.catatan && inv.catatan.includes('__DATA_PESANAN__');
+  const detailToggle = hasDetailItems
+    ? `<button class="row-action-btn btn-detail" data-no="${inv.no}" title="Lihat Detail" style="font-size:1rem">▶</button>`
+    : '';
+
   return `
-    <tr class="${overdueClass}" data-no="${inv.no}">
-      <td style="font-weight:600;color:var(--text-muted)">${inv.no}</td>
+    <tr class="invoice-main-row ${overdueClass}" data-no="${inv.no}">
+      <td style="font-weight:600;color:var(--text-muted);white-space:nowrap">
+        ${detailToggle} ${inv.no}
+      </td>
       <td class="cell-date">${formatTanggal(inv.tanggalInvoice)}</td>
       <td style="font-weight:600;color:var(--text-accent)">${inv.noInvoice}</td>
       <td>${inv.noReceipt || '-'}</td>
@@ -272,7 +280,224 @@ function renderRow(inv) {
         </div>
       </td>
     </tr>
+    <tr class="detail-expand-row" id="detail-row-${inv.no}" style="display:none;">
+      <td colspan="27" style="padding:0;">
+        <div class="detail-expand-panel" id="detail-panel-${inv.no}"></div>
+      </td>
+    </tr>
   `;
+}
+
+function parseOrderItems(catatan) {
+  if (!catatan || !catatan.includes('__DATA_PESANAN__')) return [];
+  try {
+    const jsonStr = catatan.split('__DATA_PESANAN__')[1].trim();
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    return [];
+  }
+}
+
+function renderDetailPanel(inv) {
+  const items = parseOrderItems(inv.catatan);
+  if (!items.length) return '<p style="padding:16px;color:var(--text-muted)">Tidak ada rincian pesanan.</p>';
+
+  const kurs = parseFloat(inv.kurs) || 4290;
+  let html = `<div class="detail-panel-inner">`;
+
+  // Summary header
+  html += `
+    <div class="detail-panel-header">
+      <div>
+        <span class="detail-label">Invoice:</span> <strong>${inv.noInvoice}</strong>
+        &nbsp;·&nbsp;
+        <span class="detail-label">Agen:</span> <strong>${inv.agenCustomer}</strong>
+      </div>
+      <div style="display:flex;gap:16px;">
+        <span><span class="detail-label">Total IDR:</span> <strong class="currency-idr">${formatIDR(inv.totalIDR)}</strong></span>
+        <span><span class="detail-label">Total SAR:</span> <strong class="currency-sar">${formatSAR(inv.totalSAR)}</strong></span>
+        <span><span class="detail-label">Sisa:</span> <strong style="color:${inv.sisaTagihan > 0 ? 'var(--color-danger)' : 'var(--color-success)'}">${formatIDR(inv.sisaTagihan)}</strong></span>
+      </div>
+    </div>
+  `;
+
+  // Render each item by type
+  items.forEach((item, index) => {
+    const c = item.calcData || {};
+    const jenis = item.jenisLayanan || '-';
+    const startDate = item.tanggalKeberangkatan ? formatTanggal(item.tanggalKeberangkatan) : '-';
+    const endDate = item.tanggalSelesai ? formatTanggal(item.tanggalSelesai) : '-';
+
+    html += `<div class="detail-section">`;
+    html += `<div class="detail-section-title">${jenis}</div>`;
+
+    if (item.jenisLayanan === 'Hotel (HT)') {
+      const nights = c.nights || 0;
+      const roomTypes = ['DB', 'TP', 'QD', 'QN'];
+      const qtys = { DB: c.qtyDB || 0, TP: c.qtyTP || 0, QD: c.qtyQD || 0, QN: c.qtyQN || 0 };
+      const rates = { DB: c.rateDB || 0, TP: c.rateTP || 0, QD: c.rateQD || 0, QN: c.rateQN || 0 };
+      const totalRoomRate = roomTypes.reduce((sum, t) => sum + (qtys[t] * rates[t]), 0);
+      const totalAmount = totalRoomRate * nights;
+
+      html += `
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>CI</th><th>CO</th><th>Night</th>
+              <th>Hotel Makkah/Madinah</th><th>Meals</th><th>Pax</th>
+              <th colspan="4" class="group-header">Room Type (Qty)</th>
+              <th colspan="4" class="group-header">Room Rate (SAR)</th>
+              <th>Amount (SAR)</th>
+            </tr>
+            <tr class="sub-header">
+              <th></th><th></th><th></th><th></th><th></th><th></th>
+              <th>DB</th><th>TP</th><th>QD</th><th>QN</th>
+              <th>DB</th><th>TP</th><th>QD</th><th>QN</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${endDate}</td>
+              <td>${nights}</td>
+              <td>${c.hotelName || '-'}</td>
+              <td>${c.meals || 'FB'}</td>
+              <td>${c.pax || '-'}</td>
+              <td>${qtys.DB || ''}</td><td>${qtys.TP || ''}</td><td>${qtys.QD || ''}</td><td>${qtys.QN || ''}</td>
+              <td>${rates.DB ? rates.DB.toLocaleString() : ''}</td>
+              <td>${rates.TP ? rates.TP.toLocaleString() : ''}</td>
+              <td>${rates.QD ? rates.QD.toLocaleString() : ''}</td>
+              <td>${rates.QN ? rates.QN.toLocaleString() : ''}</td>
+              <td class="amount-cell">${totalAmount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+    } else if (item.jenisLayanan === 'Restaurant (RT)') {
+      const days = c.days || 0;
+      const freq = c.freq || 0;
+      const pax = c.pax || 0;
+      const price = c.price || 0;
+      const amount = days * freq * pax * price;
+
+      html += `
+        <table class="detail-table">
+          <thead><tr><th>Date</th><th>Day</th><th>Type</th><th>Frekuensi</th><th>Pax</th><th>Price Meals/Pax (SAR)</th><th>Amount (SAR)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${days}</td>
+              <td>${c.mealsType || 'Fullboard'}</td>
+              <td>${freq}</td>
+              <td>${pax}</td>
+              <td>${price.toLocaleString('id-ID')}</td>
+              <td class="amount-cell">${amount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+    } else if (item.jenisLayanan === 'Flight (FL)') {
+      const pax = c.pax || 0;
+      const price = c.price || 0;
+      const amount = pax * price;
+
+      html += `
+        <table class="detail-table">
+          <thead><tr><th>Startdate</th><th>Enddate</th><th>Segment</th><th>Type</th><th>Pax</th><th>Price/Pax (IDR)</th><th>Amount (IDR)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${endDate}</td>
+              <td>${c.segment || '-'}</td>
+              <td>${c.flightType || 'Return'}</td>
+              <td>${pax}</td>
+              <td>${price.toLocaleString('id-ID')}</td>
+              <td class="amount-cell">${amount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+    } else if (item.jenisLayanan === 'Full Package (FP)' || item.jenisLayanan === 'Land Arrangement (LA)') {
+      const pax = c.pax || 0;
+      const price = c.price || 0;
+      const amount = pax * price;
+
+      html += `
+        <table class="detail-table">
+          <thead><tr><th>Date</th><th>Group</th><th>Pax</th><th>Price/Pax (IDR)</th><th>Amount (IDR)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${c.groupName || '-'}</td>
+              <td>${pax}</td>
+              <td>${price.toLocaleString('id-ID')}</td>
+              <td class="amount-cell">${amount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+    } else if (item.jenisLayanan === 'Visa (VIS)') {
+      const pax = c.pax || 0;
+      const price = c.price || 0;
+      const amount = pax * price;
+
+      html += `
+        <table class="detail-table">
+          <thead><tr><th>Startdate</th><th>Enddate</th><th>Item</th><th>Pax</th><th>Price/Pax (SAR)</th><th>Amount (SAR)</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${endDate}</td>
+              <td>${c.visaItem || 'Visa'}</td>
+              <td>${pax}</td>
+              <td>${price.toLocaleString('id-ID')}</td>
+              <td class="amount-cell">${amount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+
+    } else {
+      // Default / Lainnya
+      const pax = c.pax || 0;
+      const idr = c.manualIDR || 0;
+      const sar = c.manualSAR || 0;
+      const amount = pax ? (idr ? pax * idr : pax * sar) : (idr || sar);
+      const currency = idr ? 'IDR' : 'SAR';
+
+      html += `
+        <table class="detail-table">
+          <thead><tr><th>Date</th><th>Deskripsi</th><th>Pax</th><th>Harga/Pax (${currency})</th><th>Amount (${currency})</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${startDate}</td>
+              <td>${c.manualDesc || '-'}</td>
+              <td>${pax}</td>
+              <td>${(idr || sar).toLocaleString('id-ID')}</td>
+              <td class="amount-cell">${amount.toLocaleString('id-ID')}</td>
+            </tr>
+          </tbody>
+        </table>
+      `;
+    }
+
+    if (item.nomorBooking || item.supplierVendor) {
+      html += `<div class="detail-meta">`;
+      if (item.supplierVendor) html += `<span><span class="detail-label">Vendor:</span> ${item.supplierVendor}</span>`;
+      if (item.nomorBooking) html += `<span><span class="detail-label">Booking:</span> <code>${item.nomorBooking}</code></span>`;
+      html += `</div>`;
+    }
+
+    html += `</div>`; // end detail-section
+  });
+
+  html += `</div>`; // end detail-panel-inner
+  return html;
 }
 
 function buildPaginationButtons(totalPages) {
@@ -365,6 +590,32 @@ function bindTableEvents() {
       const no = parseInt(btn.dataset.no);
       const invoice = allInvoices.find(inv => inv.no === no);
       if (invoice) openFormModal(invoice);
+    });
+  });
+
+  // Detail expand buttons
+  document.querySelectorAll('.btn-detail').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const no = parseInt(btn.dataset.no);
+      const invoice = allInvoices.find(inv => inv.no === no);
+      if (!invoice) return;
+
+      const detailRow = document.getElementById(`detail-row-${no}`);
+      const detailPanel = document.getElementById(`detail-panel-${no}`);
+      if (!detailRow || !detailPanel) return;
+
+      const isOpen = detailRow.style.display !== 'none';
+      if (isOpen) {
+        detailRow.style.display = 'none';
+        btn.textContent = '▶';
+        btn.title = 'Lihat Detail';
+      } else {
+        detailPanel.innerHTML = renderDetailPanel(invoice);
+        detailRow.style.display = 'table-row';
+        btn.textContent = '▼';
+        btn.title = 'Tutup Detail';
+      }
     });
   });
 
